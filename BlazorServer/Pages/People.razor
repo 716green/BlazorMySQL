@@ -1,0 +1,67 @@
+﻿@page "/people"
+
+@using DataLibrary
+@using BlazorServer.Models
+@using Microsoft.Extensions.Configuration
+@inject IDataAccess _data
+@inject IConfiguration _config
+
+
+<h3>People</h3>
+
+<button class="btn btn-primary" @onclick="InsertData">Insert</button>
+<button class="btn btn-warning" @onclick="UpdateData">Update</button>
+<button class="btn btn-danger" @onclick="DeleteData">Delete</button>
+
+@if (people == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @foreach (var p in people)
+    {
+        <p>
+            @p.FirstName @p.LastName
+        </p>
+    }
+}
+
+@code {
+    List<PersonModel> people;
+
+    private async Task InsertData()
+    {
+        string sql = "INSERT INTO people (FirstName, LastName) VALUES (@FirstName, @LastName);";
+        // _data is connection to MySQL
+        // Hard coded right now
+        await _data.SaveData(sql, new { FirstName = "Tom", LastName = "DeLonge" }, _config.GetConnectionString("default"));
+
+        await OnInitializedAsync();
+    }
+
+    private async Task UpdateData()
+    {
+        string sql = "UPDATE people SET FirstName = @FirstName, LastName = @LastName WHERE LastName = @Identifier;";
+        // Hard coded right now
+        await _data.SaveData(sql, new { FirstName = "Mark", LastName = "Hoppus", Identifier = "DeLonge" }, _config.GetConnectionString("default"));
+        // Update Page
+        await OnInitializedAsync();
+    }
+
+    private async Task DeleteData()
+    {
+        string sql = "DELETE FROM people WHERE LastName = @Identifier;";
+        // Hard coded right now
+        await _data.SaveData(sql, new { Identifier = "Hoppus" }, _config.GetConnectionString("default"));
+        // Update Page
+        await OnInitializedAsync();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        string sql = "SELECT * FROM people";
+        people = await _data.LoadData<PersonModel, dynamic>(sql, new { }, _config.GetConnectionString("default"));
+    }
+
+}
